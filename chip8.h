@@ -31,7 +31,8 @@
 typedef struct chip8{
     //FILE * game;
 
-    unsigned short opcode;
+    uint8_t oph;//Opcode high byte
+    uint8_t opl;//Opcode low byte
     unsigned char memory[pagesize];
     unsigned char V[0x10];
     unsigned short I;

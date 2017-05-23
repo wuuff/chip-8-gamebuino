@@ -25,16 +25,20 @@ extern "C" {
       gb.display.drawPixel(x,y);
     }*/
     void display_print(C8* CH8){
+      gb.display.setColor(WHITE,BLACK);
       gb.display.cursorX = 0;
       gb.display.cursorY = 36;
-      gb.display.print(F("EX "));
-      gb.display.print(CH8->opcode);
-      gb.display.print(F(" @ "));
-      gb.display.println(CH8->pc);
-      gb.display.print(F("I:"));
-      gb.display.print(CH8->I);
-      gb.display.print(F(" SP:"));
-      gb.display.print(CH8->sp);
+      gb.display.print(F("EX 0x"));
+      gb.display.print(CH8->oph,HEX);
+      gb.display.print(F(",0x"));
+      gb.display.print(CH8->opl,HEX);
+      gb.display.print(F(" @ 0x"));
+      gb.display.println(CH8->pc,HEX);
+      gb.display.print(F("I:0x"));
+      gb.display.print(CH8->I,HEX);
+      gb.display.print(F(" SP:0x"));
+      gb.display.print(CH8->sp,HEX);
+      gb.display.setColor(INVERT);
     }
 }
 
@@ -96,13 +100,13 @@ void loop() {
         //gb.display.fillScreen(BLACK);
       }
     }else{
-      gb.display.setColor(WHITE,BLACK);
+      /*gb.display.setColor(WHITE,BLACK);
       gb.display.cursorX = 0;
-      gb.display.cursorY = 42;
-      gb.display.print(F("c "));
+      gb.display.cursorY = 42;*/
+      /*gb.display.print(F("c "));
       gb.display.print(counter);
       gb.display.print(F(" i "));
-      gb.display.println(loaded_index);
+      gb.display.println(loaded_index);*/
       gb.display.setColor(INVERT);
       /*gb.display.print(memory_get(&CH8,0x200));
       gb.display.print(F(" "));
@@ -118,6 +122,7 @@ void loop() {
       //gb.display.println(CH8.memory[0x200%156]);
       //if( gb.buttons.pressed(BTN_A) ){
         counter++;
+        chip8_execute(&CH8);
         chip8_execute(&CH8);
       //}
     }
