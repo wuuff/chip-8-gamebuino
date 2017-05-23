@@ -24,6 +24,10 @@ extern "C" {
     uint8_t buttons_held(uint8_t button){
       return gb.buttons.repeat(button,0) ? 1 : 0;
     }
+    uint8_t get_random(uint8_t val){
+      val = random(val);
+      return val;
+    }
     /*void display_clearPixel(uint8_t x, uint8_t y){
       gb.display.setColor(
       gb.display.drawPixel(x,y);

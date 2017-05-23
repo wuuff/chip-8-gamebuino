@@ -181,27 +181,27 @@ void chip8_execute(C8 * CH8){
 
             case 0x10: // 1NNN: Jumps to address NNN
                 CH8->pc = (CH8->oph & 0x0F);
-                CH8->pc = (CH8->pc << 8) | (CH8->opl & 0xFF);
+                CH8->pc = (CH8->pc << 8) | (CH8->opl);
                 //CH8->pc |= CH8->oph & 0x0F;//Hopefully cast as byte and then only set high bits
             break;
 
             case 0x20: // 2NNN: Calls subroutine at NNN
                 CH8->stack[(CH8->sp++)&0xF] = CH8->pc;
                 CH8->pc = (CH8->oph & 0x0F);
-                CH8->pc = (CH8->pc << 8) | (CH8->opl & 0xFF);
+                CH8->pc = (CH8->pc << 8) | (CH8->opl);
                 //CH8->pc = CH8->opl & 0xFF;
                 //*((uint8_t*)&CH8->pc) = CH8->oph & 0x0F;//Hopefully cast as byte and then only set high bits
             break;
 
             case 0x30: // 3XNN: Skips the next instruction if VX equals NN
-                if(CH8->V[(CH8->oph & 0x0F)] == (CH8->opl & 0xFF))
+                if(CH8->V[(CH8->oph & 0x0F)] == (CH8->opl))
                     CH8->pc += 4;
                 else
                     CH8->pc += 2;
             break;
 
             case 0x40: // 4XNN: Skips the next instruction if VX doesn't equal NN
-                if(CH8->V[(CH8->oph & 0x0F)] != (CH8->opl & 0xFF))
+                if(CH8->V[(CH8->oph & 0x0F)] != (CH8->opl))
                     CH8->pc += 4;
                 else
                     CH8->pc += 2;
@@ -215,12 +215,12 @@ void chip8_execute(C8 * CH8){
             break;
 
             case 0x60: // 6XNN: Sets VX to NN
-                CH8->V[(CH8->oph & 0x0F)] = (CH8->opl & 0xFF);
+                CH8->V[(CH8->oph & 0x0F)] = (CH8->opl);
                 CH8->pc += 2;
             break;
 
             case 0x70: // 7XNN: Adds NN to VX
-                CH8->V[(CH8->oph & 0x0F)] += (CH8->opl & 0xFF);
+                CH8->V[(CH8->oph & 0x0F)] += (CH8->opl);
                 CH8->pc += 2;
             break;
 
@@ -302,7 +302,7 @@ void chip8_execute(C8 * CH8){
             case 0xA0: // ANNN: Sets I to the address NNN
                 //CH8->I = CH8->opcode & 0x0FFF;
                 CH8->I = (CH8->oph & 0x0F);
-                CH8->I = (CH8->I << 8) | (CH8->opl & 0xFF);
+                CH8->I = (CH8->I << 8) | (CH8->opl);
                 //CH8->I = CH8->opl & 0xFF;
                 //*((uint8_t*)&CH8->I) = CH8->oph & 0x0F;//Hopefully cast as byte and then only set high bits
                 CH8->pc += 2;
@@ -311,14 +311,15 @@ void chip8_execute(C8 * CH8){
             case 0xB0: // BNNN: Jumps to the address NNN plus V0
                 //CH8->pc = (CH8->opcode & 0x0FFF) + CH8->V[0];
                 CH8->pc = (CH8->oph & 0x0F);
-                CH8->pc = (CH8->pc << 8) | (CH8->opl & 0xFF);
+                CH8->pc = (CH8->pc << 8) | (CH8->opl);
                 //CH8->pc = CH8->opl & 0xFF;
                 //*((uint8_t*)&CH8->pc) = CH8->oph & 0x0F;//Hopefully cast as byte and then only set high bits
                 CH8->pc += CH8->V[0];
             break;
 
             case 0xC0: // CXNN: Sets VX to a random number and NN
-                CH8->V[(CH8->oph & 0x0F)] = rand() & (CH8->opl & 0xFF);
+                pixel = get_random(255);
+                CH8->V[(CH8->oph & 0x0F)] = pixel & (CH8->opl);//rand() & (CH8->opl & 0xFF);
                 CH8->pc += 2;
             break;
 
@@ -389,7 +390,7 @@ void chip8_execute(C8 * CH8){
             break;
 
             case 0xF0:
-                switch(CH8->opl & 0xFF){
+                switch(CH8->opl){
                     case 0x07: // FX07: Sets VX to the value of the delay timer
                         CH8->V[(CH8->oph & 0x0F)] = CH8->delay_timer;
                         CH8->pc += 2;
