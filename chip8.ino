@@ -9,8 +9,8 @@ extern uint8_t loaded_index;
 extern "C" {
     #include "chip8.h"
     #include "trip8.h"
-    void chip8_initialize(C8* CH8);
-    void chip8_execute(C8* CH8);
+    void chip8_initialize();
+    void chip8_execute();
     //void chip8_draw(C8* CH8);
     void display_clear(){
       gb.display.clear();
@@ -39,25 +39,38 @@ extern "C" {
       gb.display.print((char)a);
       gb.display.setColor(INVERT);
     }
-    void display_print(C8* CH8){
+    void display_print(){
       gb.display.setColor(WHITE,BLACK);
       gb.display.cursorX = 0;
       gb.display.cursorY = 36;
       gb.display.print(F("EX 0x"));
-      gb.display.print(CH8->oph,HEX);
+      gb.display.print(CH8_oph,HEX);
       gb.display.print(F(",0x"));
-      gb.display.print(CH8->opl,HEX);
+      gb.display.print(CH8_opl,HEX);
       gb.display.print(F(" @ 0x"));
-      gb.display.println(CH8->pc,HEX);
+      gb.display.println(CH8_pc,HEX);
       gb.display.print(F("I:0x"));
-      gb.display.print(CH8->I,HEX);
+      gb.display.print(CH8_I,HEX);
       gb.display.print(F(" SP:0x"));
-      gb.display.print(CH8->sp,HEX);
+      gb.display.print(CH8_sp,HEX);
       gb.display.setColor(INVERT);
     }
+
+    uint8_t CH8_oph;//Opcode high byte
+    uint8_t CH8_opl;//Opcode low byte
+    unsigned char CH8_memory[pagesize];
+    unsigned char CH8_V[0x10];
+    unsigned short CH8_I;
+    unsigned short CH8_pc;
+    //unsigned char graphics[64 * 32];
+    unsigned char CH8_delay_timer;
+    unsigned char CH8_sound_timer;
+    unsigned short CH8_stack[0x10];
+    unsigned short CH8_sp;
+    uint8_t CH8_key_buf[6];
 }
 
-C8 CH8;
+//C8 CH8;
 
 //Just do drawing here so we don't have to add pokitto drawing
 //functions to the chip8 file
@@ -65,7 +78,7 @@ C8 CH8;
     int i, j;
     for (i = 0; i < 32; i++)
         for (j = 0; j < 64; j++){
-            if( CH8->graphics[(j)+(i)*64] && j < 110 && i < 88){
+            if( CH8_graphics[(j)+(i)*64] && j < 110 && i < 88){
                 gb.display.drawPixel(j,i);
             }
         }
@@ -89,9 +102,9 @@ void setup() {
   gb.pickRandomSeed();
   //initialize key bindings from EEPROM
   for(uint8_t i = 0; i < 6; i++){
-    CH8.key_buf[i] = EEPROM.read(i);
+    CH8_key_buf[i] = EEPROM.read(i);
   }
-  memory_init(&CH8);
+  memory_init();
   //chip8_initialize(&CH8);
 }
 
@@ -131,7 +144,7 @@ void loop() {
           //mem_addr = -1;//Signal that we can't go back to game because we will corrupt its ram
           unloaded = true;//Signal that we can't go back to game because we will corrupt its ram
           if( rom_load() ){
-            chip8_initialize(&CH8);
+            chip8_initialize();
             mode = MODE_GAME; 
             gb.display.persistence = true;
             gb.display.clear();
@@ -150,7 +163,7 @@ void loop() {
       //gb.display.print(((mem_addr-0x200)*100)/sizeof(rom));
       //gb.display.println(F("%"));
       //gb.display.println(loaded_index);
-      //gb.display.println(CH8.memory[0x200%156]);
+      //gb.display.println(CH8_memory[0x200%156]);
       //gb.display.println(mem_addr-0x200);
       //gb.display.println(sizeof(rom));
       //gb.display.print(counter);
@@ -211,7 +224,7 @@ void loop() {
       }
       //load into the key buf
       for(i = 0; i < 6; i++){
-        CH8.key_buf[i] = EEPROM.read(i);
+        CH8_key_buf[i] = EEPROM.read(i);
       }
       while(1){
         if( gb.update() ){
@@ -220,7 +233,7 @@ void loop() {
           gb.display.println(F("Bindings: "));
           gb.display.println(F("\33 \30 \32 \31 \25 \26"));//This would be wrong if the screen was rotated
           for(i = 0; i < 6; i++){
-              gb.display.print(CH8.key_buf[i],HEX);
+              gb.display.print(CH8_key_buf[i],HEX);
               gb.display.print(F(" "));
           }
           gb.display.println();
@@ -248,15 +261,15 @@ void loop() {
       gb.display.print(memory_get(&CH8,0x202));
       gb.display.print(F(" "));
       gb.display.println(memory_get(&CH8,0x203));
-      mem_addr = (uint16_t)(((uint16_t)memory_get(&CH8,CH8.pc)) << 8) | ((uint16_t)memory_get(&CH8,CH8.pc + 1));
+      mem_addr = (uint16_t)(((uint16_t)memory_get(&CH8,CH8_pc)) << 8) | ((uint16_t)memory_get(&CH8,CH8_pc + 1));
       gb.display.println(mem_addr);
       gb.display.println(speshul);
       display_print(&CH8);*/
-      //gb.display.println(CH8.memory[0x200%156]);
+      //gb.display.println(CH8_memory[0x200%156]);
       //if( gb.buttons.pressed(BTN_A) ){
         //counter++;
-        chip8_execute(&CH8);
-        chip8_execute(&CH8);
+        chip8_execute();
+        chip8_execute();
       //}
       if( gb.buttons.pressed(BTN_C) ){
         mode = MODE_MENU;

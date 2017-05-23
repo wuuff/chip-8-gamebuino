@@ -17,43 +17,43 @@ extern "C" {
   }*/
   #define loaded(addr) (loaded_index == ((addr)/pagesize))
 
-  void memory_swap(C8* CH8, uint8_t index){
+  void memory_swap(uint8_t index){
     //unsigned count;
     //Save current page
     filename[7] = 'A'+loaded_index;
     memFile = SD.open(filename,FILE_WRITE);
     memFile.seek(0);
-    memFile.write(CH8->memory, pagesize);
+    memFile.write(CH8_memory, pagesize);
     memFile.close();
     /*pf_open(filename);
     pf_lseek(0);
-    pf_write(CH8->memory,pagesize,&count);
+    pf_write(CH8_memory,pagesize,&count);
     pf_write(0,0,&count);*/
     
 
     //Load next page
     filename[7] = 'A'+index;
     memFile = SD.open(filename,FILE_READ);
-    memFile.read(CH8->memory, pagesize);
+    memFile.read(CH8_memory, pagesize);
     memFile.close();
     /*pf_open(filename);
-    pf_read(CH8->memory,pagesize,&count);*/
+    pf_read(CH8_memory,pagesize,&count);*/
 
     loaded_index = index;
   }
 
-  void memory_set(C8* CH8, uint16_t addr, uint8_t val){
+  void memory_set(uint16_t addr, uint8_t val){
     if( !loaded(addr) ){
-      memory_swap(CH8, addr/pagesize);
+      memory_swap(addr/pagesize);
     }
-    CH8->memory[addr%pagesize] = val;
+    CH8_memory[addr%pagesize] = val;
   }
 
-  uint8_t memory_get(C8* CH8, uint16_t addr){
+  uint8_t memory_get(uint16_t addr){
     if( !loaded(addr) ){
-      memory_swap(CH8, addr/pagesize);
+      memory_swap(addr/pagesize);
     }
-    return CH8->memory[addr%pagesize];
+    return CH8_memory[addr%pagesize];
   }
 
   /*uint16_t memory_load(C8* CH8, uint16_t addr, const void* val, size_t count){
@@ -65,7 +65,7 @@ extern "C" {
         //memory_swap(CH8, (addr+i)/pagesize);
         return addr+i;
       }
-      CH8->memory[(addr+i)%pagesize] = pgm_read_byte(val+i);
+      CH8_memory[(addr+i)%pagesize] = pgm_read_byte(val+i);
       //return addr+i+1;//Just do one and return so we can get granular
     }
     return 0;
@@ -89,11 +89,11 @@ extern "C" {
         //if( gb.buttons.pressed(BTN_A) ){
         if( !loaded(addr) ){
           memFile.close();
-          memory_swap(&CH8, addr/pagesize);//Swap pages out, which trashes the file state
+          memory_swap(addr/pagesize);//Swap pages out, which trashes the file state
           memFile = SD.open(fname,FILE_READ);//Re-open the file
           memFile.seek(addr-0x200);//Return to previous spot
         }
-        CH8.memory[(addr)%pagesize] = (uint8_t)memFile.read();
+        CH8_memory[(addr)%pagesize] = (uint8_t)memFile.read();
         addr++;
         //}
       }
@@ -104,13 +104,13 @@ extern "C" {
   
 }
 
-void memory_init(C8* CH8){
+void memory_init(){
   SD.begin(10);
   //PFFS.begin(10, rx, tx);
   //Create all possible pages on the SD card
   /*for(uint8_t i = 0; i < memsize/pagesize; i++){
     memFile = SD.open(filename,FILE_WRITE);
-    memFile.write(CH8->memory, pagesize);//Just zeros at startup I hope
+    memFile.write(CH8_memory, pagesize);//Just zeros at startup I hope
     memFile.close();
   }*/
   loaded_index = 0;//First page of memory
@@ -202,16 +202,16 @@ bool rom_menu(char* buf){
         gb.display.cursorY = 0;
         gb.display.println(F("The file:"));
         gb.display.println(buf);
-        gb.display.println((char*)(CH8->memory));
-        gb.display.println(*(char**)(CH8->memory+130));
+        gb.display.println((char*)(CH8_memory));
+        gb.display.println(*(char**)(CH8_memory+130));
         gb.display.println(F("--"));
-        gb.display.println((char*)(CH8->memory+14));
-        gb.display.println(*(char**)(CH8->memory+132));
+        gb.display.println((char*)(CH8_memory+14));
+        gb.display.println(*(char**)(CH8_memory+132));
         if (gb.buttons.pressed(BTN_A)){
           memFile = root.openNextFile();
           memFile.getName(buf,13);
-          strcpy((char*)(CH8->memory+offset),buf);//Reuse memory buffer
-      *((uint8_t**)(CH8->memory+ptroffset)) = (uint8_t*)(CH8->memory+offset);
+          strcpy((char*)(CH8_memory+offset),buf);//Reuse memory buffer
+      *((uint8_t**)(CH8_memory+ptroffset)) = (uint8_t*)(CH8_memory+offset);
       offset+=strlen(buf)+1;
       count++;
       ptroffset+=2; 
@@ -223,8 +223,8 @@ bool rom_menu(char* buf){
     }*/
           
     if( strlen(buf) > 3 && buf[strlen(buf)-1] == '8' ){// && buf[strlen(buf)-2] == 'H' && buf[strlen(buf)-3] == 'C' ){
-      strcpy((char*)(CH8.memory+offset),buf);//Reuse memory buffer
-      *((uint8_t**)(CH8.memory+ptroffset)) = (uint8_t*)(CH8.memory+offset);
+      strcpy((char*)(CH8_memory+offset),buf);//Reuse memory buffer
+      *((uint8_t**)(CH8_memory+ptroffset)) = (uint8_t*)(CH8_memory+offset);
       offset+=strlen(buf)+1;
       count++;
       ptroffset+=2; 
@@ -233,12 +233,12 @@ bool rom_menu(char* buf){
   }while(memFile);
 
   //custommenu((char**)&(buf),1);
-  //custommenu((char**)&(CH8->memory),1);
-  count = custommenu((char**)(CH8.memory+MENU_PTRS),count);
+  //custommenu((char**)&(CH8_memory),1);
+  count = custommenu((char**)(CH8_memory+MENU_PTRS),count);
   if( count == -1 ){
     return false;
   }
-  strcpy(buf,((char**)(CH8.memory+MENU_PTRS))[count]);//Load filename into buffer
+  strcpy(buf,((char**)(CH8_memory+MENU_PTRS))[count]);//Load filename into buffer
   return true;
 }
 
