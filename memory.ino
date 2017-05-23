@@ -160,20 +160,45 @@ bool rom_load(C8* CH8){
   uint16_t offset = 0;
   uint16_t ptroffset = 130;
   uint8_t count = 0;//Please no more than 255 roms (although we actually have space for much less)
+  char buf[13]; 
   File root = SD.open("/");
-  do{
-    memFile = root.openNextFile();
-    const char* n = memFile.name();
-    //if( strlen(n) > 3 && n[strlen(n)-1] == '8' && n[strlen(n)-2] == 'H' && n[strlen(n)-3] == 'C' ){
-      strcpy((char*)(CH8->memory+offset),n);//Reuse memory buffer
-      offset+=strlen(n);
+  //do{
+    //memFile = root.openNextFile();
+    //memFile.getName(buf,13);
+    while (1) {
+      if (gb.update()) {
+        gb.display.cursorX = 0;
+        gb.display.cursorY = 0;
+        gb.display.println(F("The file:"));
+        gb.display.println(buf);
+        gb.display.println((char*)(CH8->memory));
+        gb.display.println(*(char**)(CH8->memory+130));
+        gb.display.println(F("--"));
+        gb.display.println((char*)(CH8->memory+14));
+        gb.display.println(*(char**)(CH8->memory+132));
+        if (gb.buttons.pressed(BTN_A)){
+          memFile = root.openNextFile();
+          memFile.getName(buf,13);
+          strcpy((char*)(CH8->memory+offset),buf);//Reuse memory buffer
+      *((uint8_t**)(CH8->memory+ptroffset)) = (uint8_t*)(CH8->memory+offset);
+      offset+=strlen(buf)+1;
       count++;
-      *((uint8_t**)CH8->memory+ptroffset) = (uint8_t*)(CH8->memory+offset);
       ptroffset+=2; 
+        }
+        if (gb.buttons.pressed(BTN_B)){
+          break;
+        }
+      }
+    }
+          
+    //if( strlen(buf) > 3 && buf[strlen(buf)-1] == '8' && buf[strlen(buf)-2] == 'H' && buf[strlen(buf)-3] == 'C' ){
+      
     //}
     //memFile.close();
-  }while(count <= 5);//memFile);
+  //}while(count <= 5);//memFile);
 
+  custommenu((char**)&(buf),1);
+  custommenu((char**)&(CH8->memory),1);
   custommenu((char**)(CH8->memory+130),count);
   return false;
 }
