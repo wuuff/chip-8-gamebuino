@@ -86,8 +86,6 @@ extern "C" {
         gb.display.print(addr-0x200);
         gb.display.print(F("/"));
         gb.display.println(filesize);
-        gb.display.println(memFile.size());
-        gb.display.print(loaded_index);
         //if( gb.buttons.pressed(BTN_A) ){
         if( !loaded(addr) ){
           memFile.close();

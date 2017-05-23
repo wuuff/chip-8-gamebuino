@@ -79,8 +79,8 @@ void setup() {
 #define MODE_MENU 0
 #define MODE_GAME 1
 uint8_t mode = 0;
-uint8_t counter = 0;
-uint16_t mem_addr = -1;//0x200;
+bool unloaded = true;
+//uint16_t mem_addr = -1;//0x200;
 
 
 void loop() {
@@ -97,22 +97,25 @@ void loop() {
 
       switch( gb.menu(menu, MAIN_MENU_LEN) ){
         case -1:
-          if((signed)mem_addr == -1){
+          if(unloaded){
             gb.titleScreen(F("Chip8"));
             gb.battery.show = false;
           }else{
             mode = MODE_GAME;
+            gb.display.persistence = true;
+            gb.display.clear();
           }
           break;
         case 0:
           //Go to rom selection screen
           //mem_addr = -1;//Signal that we can't go back to game because we will corrupt its ram
+          unloaded = true;//Signal that we can't go back to game because we will corrupt its ram
           if( rom_load() ){
             chip8_initialize(&CH8);
-            counter = 0;
             mode = MODE_GAME; 
             gb.display.persistence = true;
             gb.display.clear();
+            unloaded = false;
           }
           break;
         case 1:
@@ -163,10 +166,13 @@ void loop() {
       display_print(&CH8);*/
       //gb.display.println(CH8.memory[0x200%156]);
       //if( gb.buttons.pressed(BTN_A) ){
-        counter++;
+        //counter++;
         chip8_execute(&CH8);
         chip8_execute(&CH8);
       //}
+      if( gb.buttons.pressed(BTN_C) ){
+        mode = MODE_MENU;
+      }
     }
     //chip8_execute(&CH8);
     //draw(&CH8);
