@@ -1,4 +1,5 @@
 #include <avr/pgmspace.h>
+#include <EEPROM.h>
 #include <Gamebuino.h>
 
 Gamebuino gb;
@@ -20,10 +21,20 @@ extern "C" {
     void display_drawPixel(uint8_t x, uint8_t y){
       gb.display.drawPixel(x,y);
     }
+    uint8_t buttons_held(uint8_t button){
+      return gb.buttons.repeat(button,0) ? 1 : 0;
+    }
     /*void display_clearPixel(uint8_t x, uint8_t y){
       gb.display.setColor(
       gb.display.drawPixel(x,y);
     }*/
+    void display_pbh(uint8_t a){
+      gb.display.setColor(WHITE,BLACK);
+      gb.display.cursorX = 0;
+      gb.display.cursorY = 36;
+      gb.display.print((char)a);
+      gb.display.setColor(INVERT);
+    }
     void display_print(C8* CH8){
       gb.display.setColor(WHITE,BLACK);
       gb.display.cursorX = 0;
@@ -72,12 +83,17 @@ void setup() {
   gb.battery.show = false;
   gb.setFrameRate(120);
   gb.pickRandomSeed();
+  //initialize key bindings from EEPROM
+  for(uint8_t i = 0; i < 6; i++){
+    CH8.key_buf[i] = EEPROM.read(i);
+  }
   memory_init(&CH8);
   //chip8_initialize(&CH8);
 }
 
 #define MODE_MENU 0
-#define MODE_GAME 1
+#define MODE_KEYS 1
+#define MODE_GAME 2
 uint8_t mode = 0;
 bool unloaded = true;
 //uint16_t mem_addr = -1;//0x200;
@@ -119,7 +135,7 @@ void loop() {
           }
           break;
         case 1:
-          //Config controls
+          mode = MODE_KEYS;
           break;
         case 2: 
           gb.titleScreen(F("Chip8"));
@@ -144,10 +160,78 @@ void loop() {
         //gb.display.setColor(WHITE,BLACK);
         //gb.display.fillScreen(BLACK);
       }*/
+    }else if( mode == MODE_KEYS ){
+      uint8_t i;
+      for(i = 0; i < 16; i++){
+        while(1){
+          if( gb.update() ){
+            //Let player choose a binding that they want for each game
+            gb.display.cursorX = 0;
+            gb.display.cursorY = 0;
+            gb.display.print(F("Press button for "));
+            gb.display.println(i,HEX);
+            gb.display.println(F("\27 to skip key\nKeypad:"));
+            gb.display.println(F("1 2 3 C"));
+            gb.display.println(F("4 5 6 D"));
+            gb.display.println(F("7 8 9 E"));
+            gb.display.println(F("A 0 B F"));
+            if( gb.buttons.pressed(BTN_C) ){
+              break;//Do nothing
+            }
+            if( gb.buttons.pressed(BTN_A) ){
+              EEPROM.update(BTN_A,i);
+              break;
+            }
+            if( gb.buttons.pressed(BTN_B) ){
+              EEPROM.update(BTN_B,i);
+              break;
+            }
+            if( gb.buttons.pressed(BTN_UP) ){
+              EEPROM.update(BTN_UP,i);
+              break;
+            }
+            if( gb.buttons.pressed(BTN_RIGHT) ){
+              EEPROM.update(BTN_RIGHT,i);
+              break;
+            }
+            if( gb.buttons.pressed(BTN_DOWN) ){
+              EEPROM.update(BTN_DOWN,i);
+              break;
+            }
+            if( gb.buttons.pressed(BTN_LEFT) ){
+              EEPROM.update(BTN_LEFT,i);
+              break;
+            }
+          }
+        }
+      }
+      //load into the key buf
+      for(i = 0; i < 6; i++){
+        CH8.key_buf[i] = EEPROM.read(i);
+      }
+      while(1){
+        if( gb.update() ){
+          gb.display.cursorX = 0;
+          gb.display.cursorY = 0;
+          gb.display.println(F("Bindings: "));
+          gb.display.println(F("\33 \30 \32 \31 \25 \26"));//This would be wrong if the screen was rotated
+          for(i = 0; i < 6; i++){
+              gb.display.print(CH8.key_buf[i],HEX);
+              gb.display.print(F(" "));
+          }
+          gb.display.println();
+          gb.display.print(F("Press \25"));
+          if( gb.buttons.pressed(BTN_A) ){
+            break;
+          }
+        }
+      }
+      mode = MODE_MENU;
     }else{
       /*gb.display.setColor(WHITE,BLACK);
       gb.display.cursorX = 0;
-      gb.display.cursorY = 42;*/
+      gb.display.cursorY = 42;
+      gb.display.print( (char)('0' + buttons_held(0)) );*/
       /*gb.display.print(F("c "));
       gb.display.print(counter);
       gb.display.print(F(" i "));

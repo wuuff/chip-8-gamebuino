@@ -148,9 +148,10 @@ void chip8_timers(C8 * CH8){
 void chip8_execute(C8 * CH8){
 
     //Uint8 * keys;
-    int y, x, vx, vy, i;
+    int y, x, vx, vy;
     //uint8_t times;
-    uint8_t scratch;//storage for temporary calculations
+    uint8_t i;
+    //uint8_t scratch;//storage for temporary calculations
     uint8_t height, pixel;
 
     //for(times = 0; times < 1; times++){
@@ -352,19 +353,33 @@ void chip8_execute(C8 * CH8){
             case 0xE0:
                 switch(CH8->opl & 0x0F){
                     case 0x0E: // EX9E: Skips the next instruction if the key stored in VX is pressed
-                        //TODO: HANDLE INPUT
                         //keys = SDL_GetKeyState(NULL);
+                        for(i = 0; i < 6; i++){
+                          pixel = buttons_held(i);
+                          if( CH8->key_buf[i] == CH8->V[(CH8->oph & 0x0F)] && pixel ){
+                            CH8->pc += 2;//Add 2 and then add 2 after
+                            break;
+                          }
+                        }
+                        CH8->pc += 2;
                         //if(keys[keymap[CH8->V[(CH8->opcode & 0x0F00) >> 8]]])
                         //    CH8->pc += 4;
                         //else
-                            CH8->pc += 2;
+                        //    CH8->pc += 2;
                     break;
 
                     case 0x01: // EXA1: Skips the next instruction if the key stored in VX isn't pressed
-                        //TODO: HANDLE INPUT
                         //keys = SDL_GetKeyState(NULL);
+                        for(i = 0; i < 6; i++){
+                          pixel = buttons_held(i);
+                          if( CH8->key_buf[i] == CH8->V[(CH8->oph & 0x0F)] && !pixel ){
+                            CH8->pc += 2;//Add 2 and then add 2 after
+                            break;
+                          }
+                        }
+                        CH8->pc += 2;
                         //if(!keys[keymap[CH8->V[(CH8->opcode & 0x0F00) >> 8]]])
-                            CH8->pc += 4;
+                        //    CH8->pc += 4;
                         //else
                         //    CH8->pc += 2;
                     break;
@@ -381,13 +396,21 @@ void chip8_execute(C8 * CH8){
                     break;
 
                     case 0x0A: // FX0A: A key press is awaited, and then stored in VX
-                        //TODO: HANDLE INPUT
-                        /*keys = SDL_GetKeyState(NULL);
-                        for(i = 0; i < 0x10; i++)
+                        //keys = SDL_GetKeyState(NULL);
+                        for(i = 0; i < 6; i++){
+                          pixel = buttons_held(i);//WHY IS THIS NEEDED?!  WHY DOES CALLING IT DIRECTLY RETURN A WRONG ANSWER
+                          //display_pbh(pixel);
+                          if( pixel == 1 ){
+                            CH8->V[(CH8->oph & 0x0F)] = CH8->key_buf[i];
+                            CH8->pc += 2;
+                            break;
+                          }
+                        }
+                        /*for(i = 0; i < 0x10; i++)
                             if(keys[keymap[i]]){
                                 CH8->V[(CH8->opcode & 0x0F00) >> 8] = i;
                                 CH8->pc += 2;
-                            }*/CH8->pc += 2;
+                            }*/
                     break;
 
                     case 0x15: // FX15: Sets the delay timer to VX

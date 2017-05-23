@@ -42,6 +42,7 @@ typedef struct chip8{
     unsigned char sound_timer;
     unsigned short stack[0x10];
     unsigned short sp;
-    unsigned char key[0x10];
+    uint8_t key_buf[6];
+    //unsigned char key[0x10];
 } C8;
 #endif // CHIP8
