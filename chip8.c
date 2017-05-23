@@ -151,7 +151,7 @@ void chip8_execute(){
     int y, x, vx, vy;
     //uint8_t times;
     uint8_t i;
-    //uint8_t scratch;//storage for temporary calculations
+    uint8_t scratch;//storage for temporary calculations
     uint8_t height, pixel;
 
     //for(times = 0; times < 1; times++){
@@ -232,17 +232,17 @@ void chip8_execute(){
                     break;
 
                     case 0x01: // 8XY1: Sets VX to VX or VY
-                        CH8_V[(CH8_oph & 0x0F)] = CH8_V[(CH8_oph & 0x0F)] | CH8_V[(CH8_opl & 0xF0) >> 4];
+                        CH8_V[(CH8_oph & 0x0F)] |= CH8_V[(CH8_opl & 0xF0) >> 4];
                         CH8_pc += 2;
                     break;
 
                     case 0x02: // 8XY2: Sets VX to VX and VY
-                        CH8_V[(CH8_oph & 0x0F)] = CH8_V[(CH8_oph & 0x0F)] & CH8_V[(CH8_opl & 0xF0) >> 4];
+                        CH8_V[(CH8_oph & 0x0F)] &= CH8_V[(CH8_opl & 0xF0) >> 4];
                         CH8_pc += 2;
                     break;
 
                     case 0x03: // 8XY3: Sets VX to VX xor VY
-                        CH8_V[(CH8_oph & 0x0F)] = CH8_V[(CH8_oph & 0x0F)] ^ CH8_V[(CH8_opl & 0xF0) >> 4];
+                        CH8_V[(CH8_oph & 0x0F)] ^= CH8_V[(CH8_opl & 0xF0) >> 4];
                         CH8_pc += 2;
                     break;
 
@@ -268,7 +268,7 @@ void chip8_execute(){
 
                     case 0x06: // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift
                         CH8_V[0xF] = CH8_V[(CH8_oph & 0x0F)] & 7;
-                        CH8_V[(CH8_oph & 0x0F)] = CH8_V[(CH8_oph & 0x0F)] >> 1;
+                        CH8_V[(CH8_oph & 0x0F)] >>= 1;
                         CH8_pc += 2;
                     break;
 
@@ -284,7 +284,7 @@ void chip8_execute(){
 
                     case 0x0E: // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift
                         CH8_V[0xF] = CH8_V[(CH8_oph & 0x0F)] >> 7;
-                        CH8_V[(CH8_oph & 0x0F)] = CH8_V[(CH8_oph & 0x0F)] << 1;
+                        CH8_V[(CH8_oph & 0x0F)] <<= 1;
                         CH8_pc += 2;
                     break;
                     default: ;//printf("Wrong opcode: %X\n", CH8_opcode); getchar();
@@ -438,9 +438,10 @@ void chip8_execute(){
                         /*CH8_memory[CH8_I] = CH8_V[(CH8_opcode & 0x0F00) >> 8] / 100;
                         CH8_memory[CH8_I+1] = (CH8_V[(CH8_opcode & 0x0F00) >> 8] / 10) % 10;
                         CH8_memory[CH8_I+2] = CH8_V[(CH8_opcode & 0x0F00) >> 8] % 10;*/
-                        memory_set(CH8_I,CH8_V[(CH8_oph & 0x0F)] / 100);
-                        memory_set(CH8_I+1,(CH8_V[(CH8_oph & 0x0F)] / 10) % 10);
-                        memory_set(CH8_I+2, CH8_V[(CH8_oph & 0x0F)] % 10);
+                        scratch = (CH8_oph & 0x0F);
+                        memory_set(CH8_I,CH8_V[scratch] / 100);
+                        memory_set(CH8_I+1,(CH8_V[scratch] / 10) % 10);
+                        memory_set(CH8_I+2, CH8_V[scratch] % 10);
                         CH8_pc += 2;
                     break;
 
@@ -452,7 +453,8 @@ void chip8_execute(){
                     break;
 
                     case 0x65: //FX65: Fills V0 to VX with values from memory starting at address I
-                        for(i = 0; i <= ((CH8_oph & 0x0F)); i++)
+                        scratch = (CH8_oph & 0x0F);
+                        for(i = 0; i <= (scratch); i++)
                             //CH8_V[i] = CH8_memory[CH8_I + i];
                             CH8_V[i] = memory_get(CH8_I + i);
                         CH8_pc += 2;
