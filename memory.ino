@@ -56,7 +56,7 @@ extern "C" {
     return CH8->memory[addr%pagesize];
   }
 
-  uint16_t memory_load(C8* CH8, uint16_t addr, const void* val, size_t count){
+  /*uint16_t memory_load(C8* CH8, uint16_t addr, const void* val, size_t count){
     if( !loaded(addr) ){
       memory_swap(CH8, (addr)/pagesize);
     }
@@ -69,6 +69,39 @@ extern "C" {
       //return addr+i+1;//Just do one and return so we can get granular
     }
     return 0;
+  }*/
+
+  void memory_load(char* fname){
+    uint16_t addr = 0x200;
+    unsigned long filesize = 0;
+    loaded_index = addr/pagesize;//Switch to starting page (we don't care about saving current mem contents)
+    memFile = SD.open(fname,FILE_READ);
+    filesize = memFile.size();
+    while( (addr-0x200) < filesize ){
+      if( gb.update() ){
+        gb.display.cursorX = 0;
+        gb.display.cursorY = 0;
+        gb.display.print(F("Loading "));
+        gb.display.println(fname);
+        gb.display.print(addr-0x200);
+        gb.display.print(F("/"));
+        gb.display.println(filesize);
+        gb.display.println(memFile.size());
+        gb.display.print(loaded_index);
+        //if( gb.buttons.pressed(BTN_A) ){
+        if( !loaded(addr) ){
+          memFile.close();
+          memory_swap(&CH8, addr/pagesize);//Swap pages out, which trashes the file state
+          memFile = SD.open(fname,FILE_READ);//Re-open the file
+          memFile.seek(addr-0x200);//Return to previous spot
+        }
+        CH8.memory[(addr)%pagesize] = (uint8_t)memFile.read();
+        addr++;
+        //}
+      }
+    }
+    
+    
   }
   
 }
@@ -156,16 +189,16 @@ int8_t custommenu(const char* const* items, uint8_t length) {
   }
 }
 
-bool rom_load(C8* CH8){
+#define MENU_PTRS 130 //Room for 10 roms
+bool rom_menu(char* buf){
   uint16_t offset = 0;
-  uint16_t ptroffset = 130;
+  uint16_t ptroffset = MENU_PTRS;
   uint8_t count = 0;//Please no more than 255 roms (although we actually have space for much less)
-  char buf[13]; 
   File root = SD.open("/");
-  //do{
-    //memFile = root.openNextFile();
-    //memFile.getName(buf,13);
-    while (1) {
+  do{
+    memFile = root.openNextFile();
+    memFile.getName(buf,13);
+    /*while (1) {
       if (gb.update()) {
         gb.display.cursorX = 0;
         gb.display.cursorY = 0;
@@ -189,17 +222,34 @@ bool rom_load(C8* CH8){
           break;
         }
       }
-    }
+    }*/
           
-    //if( strlen(buf) > 3 && buf[strlen(buf)-1] == '8' && buf[strlen(buf)-2] == 'H' && buf[strlen(buf)-3] == 'C' ){
-      
-    //}
+    if( strlen(buf) > 3 && buf[strlen(buf)-1] == '8' ){// && buf[strlen(buf)-2] == 'H' && buf[strlen(buf)-3] == 'C' ){
+      strcpy((char*)(CH8.memory+offset),buf);//Reuse memory buffer
+      *((uint8_t**)(CH8.memory+ptroffset)) = (uint8_t*)(CH8.memory+offset);
+      offset+=strlen(buf)+1;
+      count++;
+      ptroffset+=2; 
+    }
     //memFile.close();
-  //}while(count <= 5);//memFile);
+  }while(memFile);
 
-  custommenu((char**)&(buf),1);
-  custommenu((char**)&(CH8->memory),1);
-  custommenu((char**)(CH8->memory+130),count);
+  //custommenu((char**)&(buf),1);
+  //custommenu((char**)&(CH8->memory),1);
+  count = custommenu((char**)(CH8.memory+MENU_PTRS),count);
+  if( count == -1 ){
+    return false;
+  }
+  strcpy(buf,((char**)(CH8.memory+MENU_PTRS))[count]);//Load filename into buffer
+  return true;
+}
+
+bool rom_load(){
+  char buf[13]; 
+  if( rom_menu(buf) ){
+    memory_load(buf);
+    return true;
+  }
   return false;
 }
 

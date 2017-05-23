@@ -107,7 +107,7 @@ void loop() {
         case 0:
           //Go to rom selection screen
           //mem_addr = -1;//Signal that we can't go back to game because we will corrupt its ram
-          if( rom_load(&CH8) ){
+          if( rom_load() ){
             chip8_initialize(&CH8);
             counter = 0;
             mode = MODE_GAME; 
