@@ -56,6 +56,16 @@ C8 CH8;
         }
 }*/
 
+#define MAIN_MENU_LEN 3
+const char loadrom[] PROGMEM = "Load ROM";
+const char configure[] PROGMEM = "Config Keys";
+const char title[] PROGMEM = "Title Screen";
+const char* const menu[3] PROGMEM = {
+  loadrom,
+  configure,
+  title
+};
+
 void setup() {
   gb.begin();
   gb.titleScreen(F("Chip8"));
@@ -66,22 +76,54 @@ void setup() {
   //chip8_initialize(&CH8);
 }
 
+#define MODE_MENU 0
+#define MODE_GAME 1
 uint8_t mode = 0;
 uint8_t counter = 0;
-uint16_t mem_addr = 0x200;
+uint16_t mem_addr = -1;//0x200;
 
 
 void loop() {
   if(gb.update()){
     //gb.display.clear();
-    if( mode == 0 ){
-      mem_addr = memory_load(&CH8, mem_addr, rom+(mem_addr-0x200), sizeof(rom)-(mem_addr-0x200));
+    if( mode == MODE_MENU ){
+      /*mem_addr = memory_load(&CH8, mem_addr, rom+(mem_addr-0x200), sizeof(rom)-(mem_addr-0x200));
       gb.display.cursorX = 0;
       gb.display.cursorY = 0;
       gb.display.print(F("Loading: "));
       gb.display.print(mem_addr-0x200);
       gb.display.print(F("/"));
-      gb.display.println(sizeof(rom));
+      gb.display.println(sizeof(rom));*/
+
+      switch( gb.menu(menu, MAIN_MENU_LEN) ){
+        case -1:
+          if((signed)mem_addr == -1){
+            gb.titleScreen(F("Chip8"));
+            gb.battery.show = false;
+          }else{
+            mode = MODE_GAME;
+          }
+          break;
+        case 0:
+          //Go to rom selection screen
+          //mem_addr = -1;//Signal that we can't go back to game because we will corrupt its ram
+          if( rom_load(&CH8) ){
+            chip8_initialize(&CH8);
+            counter = 0;
+            mode = MODE_GAME; 
+            gb.display.persistence = true;
+            gb.display.clear();
+          }
+          break;
+        case 1:
+          //Config controls
+          break;
+        case 2: 
+          gb.titleScreen(F("Chip8"));
+          gb.battery.show = false;
+          break;
+      }
+      
       //gb.display.print(((mem_addr-0x200)*100)/sizeof(rom));
       //gb.display.println(F("%"));
       //gb.display.println(loaded_index);
@@ -89,16 +131,16 @@ void loop() {
       //gb.display.println(mem_addr-0x200);
       //gb.display.println(sizeof(rom));
       //gb.display.print(counter);
-      counter++;
+      /*counter++;
       if( mem_addr == 0 ){
         chip8_initialize(&CH8);
         counter = 0;
-        mode = 1; 
+        mode = MODE_GAME; 
         gb.display.persistence = true;
         gb.display.clear();
         //gb.display.setColor(WHITE,BLACK);
         //gb.display.fillScreen(BLACK);
-      }
+      }*/
     }else{
       /*gb.display.setColor(WHITE,BLACK);
       gb.display.cursorX = 0;

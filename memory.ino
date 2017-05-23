@@ -96,3 +96,85 @@ void tx(byte d) { // needed by petit_fatfs
   loop_until_bit_is_set(SPSR, SPIF);
 }*/
 
+int8_t custommenu(const char* const* items, uint8_t length) {
+  gb.display.persistence = false;
+  int8_t activeItem = 0;
+  int8_t currentY = LCDHEIGHT;
+  int8_t targetY = 0;
+  boolean exit = false;
+  int8_t answer = -1;
+  while (1) {
+    if (gb.update()) {
+      if (gb.buttons.pressed(BTN_A) || gb.buttons.pressed(BTN_B) || gb.buttons.pressed(BTN_C)) {
+        exit = true; //time to exit menu !
+        targetY = - gb.display.fontHeight * length - 2; //send the menu out of the screen
+        if (gb.buttons.pressed(BTN_A)) {
+          answer = activeItem;
+          gb.sound.playOK();
+        } else {
+          gb.sound.playCancel();
+        }
+      }
+      if (exit == false) {
+        if (gb.buttons.repeat(BTN_DOWN,4)) {
+          activeItem++;
+          gb.sound.playTick();
+        }
+        if (gb.buttons.repeat(BTN_UP,4)) {
+          activeItem--;
+          gb.sound.playTick();
+        }
+        //don't go out of the menu
+        if (activeItem == length) activeItem = 0;
+        if (activeItem < 0) activeItem = length - 1;
+
+        targetY = -gb.display.fontHeight * activeItem + (gb.display.fontHeight+4); //center the menu on the active item
+      } else { //exit :
+        if ((currentY - targetY) <= 1)
+        return (answer);
+      }
+      //draw a fancy menu
+      currentY = (currentY + targetY) / 2;
+      gb.display.cursorX = 0;
+      gb.display.cursorY = currentY;
+      gb.display.fontSize = 1;
+      gb.display.textWrap = false;
+      for (byte i = 0; i < length; i++) {
+        if (i == activeItem){
+          gb.display.cursorX = 3;
+          gb.display.cursorY = currentY + gb.display.fontHeight * activeItem;
+        }
+        gb.display.println(*(items+i));
+      }
+
+      //display.fillRect(0, currentY + 3 + 8 * activeItem, 2, 2, BLACK);
+      gb.display.setColor(WHITE);
+      gb.display.drawFastHLine(0, currentY + gb.display.fontHeight * activeItem - 1, LCDWIDTH);
+      gb.display.setColor(BLACK);
+      gb.display.drawRoundRect(0, currentY + gb.display.fontHeight * activeItem - 2, LCDWIDTH, (gb.display.fontHeight+3), 3);
+    }
+  }
+}
+
+bool rom_load(C8* CH8){
+  uint16_t offset = 0;
+  uint16_t ptroffset = 130;
+  uint8_t count = 0;//Please no more than 255 roms (although we actually have space for much less)
+  File root = SD.open("/");
+  do{
+    memFile = root.openNextFile();
+    const char* n = memFile.name();
+    //if( strlen(n) > 3 && n[strlen(n)-1] == '8' && n[strlen(n)-2] == 'H' && n[strlen(n)-3] == 'C' ){
+      strcpy((char*)(CH8->memory+offset),n);//Reuse memory buffer
+      offset+=strlen(n);
+      count++;
+      *((uint8_t**)CH8->memory+ptroffset) = (uint8_t*)(CH8->memory+offset);
+      ptroffset+=2; 
+    //}
+    //memFile.close();
+  }while(count <= 5);//memFile);
+
+  custommenu((char**)(CH8->memory+130),count);
+  return false;
+}
+

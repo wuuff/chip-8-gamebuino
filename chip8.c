@@ -150,6 +150,7 @@ void chip8_execute(C8 * CH8){
     //Uint8 * keys;
     int y, x, vx, vy, i;
     //uint8_t times;
+    uint8_t scratch;//storage for temporary calculations
     uint8_t height, pixel;
 
     //for(times = 0; times < 1; times++){
