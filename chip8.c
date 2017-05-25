@@ -248,21 +248,23 @@ void chip8_execute(){
 
                     case 0x04: // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't
                         if(((int)CH8_V[(CH8_oph & 0x0F)] + (int)CH8_V[(CH8_opl & 0xF0) >> 4]) < 256)
-                            CH8_V[0xF] &= 0;
+                            scratch = 0;//CH8_V[0xF] &= 0;
                         else
-                            CH8_V[0xF] = 1;
+                            scratch = 1;//CH8_V[0xF] = 1;
 
                         CH8_V[(CH8_oph & 0x0F)] += CH8_V[(CH8_opl & 0xF0) >> 4];
+                        CH8_V[0xF] = scratch;
                         CH8_pc += 2;
                     break;
 
                     case 0x05: // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't
                         if(((int)CH8_V[(CH8_oph & 0x0F)] - (int)CH8_V[(CH8_opl & 0xF0) >> 4]) >= 0)
-                            CH8_V[0xF] = 1;
+                            scratch = 1;//CH8_V[0xF] = 1;
                         else
-                            CH8_V[0xF] &= 0;
+                            scratch = 0;//CH8_V[0xF] &= 0;
 
                         CH8_V[(CH8_oph & 0x0F)] -= CH8_V[(CH8_opl & 0xF0) >> 4];
+                        CH8_V[0xF] = scratch;
                         CH8_pc += 2;
                     break;
 
@@ -273,12 +275,13 @@ void chip8_execute(){
                     break;
 
                     case 0x07: // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't
-                        if(((int)CH8_V[(CH8_oph & 0x0F)] - (int)CH8_V[(CH8_opl & 0xF0) >> 4]) > 0)
-                            CH8_V[0xF] = 1;
+                        if(((int)CH8_V[(CH8_opl & 0xF0) >> 4] - (int)CH8_V[(CH8_oph & 0x0F)]) >= 0)
+                            scratch = 1;//CH8_V[0xF] = 1;
                         else
-                            CH8_V[0xF] &= 0;
+                            scratch = 0;//CH8_V[0xF] &= 0;
 
                         CH8_V[(CH8_oph & 0x0F)] = CH8_V[(CH8_opl & 0xF0) >> 4] - CH8_V[(CH8_oph & 0x0F)];
+                        CH8_V[0xF] = scratch;
                         CH8_pc += 2;
                     break;
 
