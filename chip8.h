@@ -2,8 +2,7 @@
 #define CHIP8
 
 #define memsize 4096
-#define rom_size 160
-#define pagesize (256+rom_size) // 256 = last half of the display buffer
+#define pagesize 156
 #define SCREEN_W 640
 #define SCREEN_H 320
 #define SCREEN_BPP 32
@@ -48,10 +47,7 @@
 } C8;*/
 extern uint8_t CH8_oph;//Opcode high byte
 extern uint8_t CH8_opl;//Opcode low byte
-extern uint8_t CH8_workspace[];
-#define CH8_display CH8_workspace
-#define CH8_memory (CH8_workspace + 256)
-#define CH8_roms (CH8_workspace + 504)
+extern unsigned char CH8_memory[pagesize];
 extern unsigned char CH8_V[0x10];
 extern unsigned short CH8_I;
 extern unsigned short CH8_pc;
@@ -61,5 +57,3 @@ extern unsigned short CH8_stack[0x10];
 extern unsigned short CH8_sp;
 extern uint8_t CH8_key_buf[6];
 #endif // CHIP8
-
-

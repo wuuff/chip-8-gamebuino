@@ -1,6 +1,6 @@
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
-#include "src\Gamebuino\Gamebuino.h"
+#include <Gamebuino.h>
 
 Gamebuino gb;
 
@@ -13,15 +13,13 @@ extern "C" {
     void chip8_execute();
     //void chip8_draw(C8* CH8);
     void display_clear(){
-      //gb.display.clear();
-      memset(CH8_display, 0, 256);
+      gb.display.clear();
     }
-    uint8_t display_getPixel(uint8_t x, uint8_t y){      
-      return (CH8_display[(y >> 3) * 64 + x] >> (y & 7)) & 1;
+    uint8_t display_getPixel(uint8_t x, uint8_t y){
+      return gb.display.getPixel(x,y);
     }
     void display_drawPixel(uint8_t x, uint8_t y){
-      if ((x < 64) && (y<32))
-        CH8_display[(y >> 3) * 64 + x] ^= (1 << (y & 7));
+      gb.display.drawPixel(x,y);
     }
     uint8_t buttons_held(uint8_t button){
       return gb.buttons.repeat(button,0) ? 1 : 0;
@@ -59,7 +57,8 @@ extern "C" {
     }
 
     uint8_t CH8_oph;//Opcode high byte
-    uint8_t CH8_opl;//Opcode low byte    
+    uint8_t CH8_opl;//Opcode low byte
+    unsigned char CH8_memory[pagesize];
     unsigned char CH8_V[0x10];
     unsigned short CH8_I;
     unsigned short CH8_pc;
@@ -69,7 +68,6 @@ extern "C" {
     unsigned short CH8_stack[0x10];
     unsigned short CH8_sp;
     uint8_t CH8_key_buf[6];
-    unsigned char CH8_workspace[512+rom_size];
 }
 
 //C8 CH8;
@@ -97,9 +95,7 @@ const char* const menu[3] PROGMEM = {
 };
 
 void setup() {
-  gb.display.setBuffer(CH8_display);
-  
-  gb.begin();  
+  gb.begin();
   gb.titleScreen(F("Chip8"));
   gb.battery.show = false;
   gb.setFrameRate(120);
@@ -119,42 +115,9 @@ uint8_t mode = 0;
 bool unloaded = true;
 //uint16_t mem_addr = -1;//0x200;
 
-void flip() {
-  //gb.display.update();
-  gb.display.frameCount ++;
-  uint8_t col, maxcol, p;
-  uint8_t * src = CH8_display;
-
-  for (p = 0; p < 6; p++) {
-    gb.display.command(PCD8544_SETYADDR | p);
-    
-    // start at the beginning of the row
-    col = 0;
-    maxcol = LCDWIDTH_NOROT - 1;
-    gb.display.command(PCD8544_SETXADDR | col);
-    digitalWrite(SCR_DC, HIGH);
-    digitalWrite(SCR_CS, LOW);
-    
-    if ((p==0) || (p==5))
-      for (; col <= maxcol; col++)
-        SPI.transfer(0x00);
-    else {
-      for (; col < 10; col++)
-        SPI.transfer(0x00);
-      for (; col < 74; col++)
-        SPI.transfer(*src++);
-      for (; col <= maxcol; col++)
-        SPI.transfer(0x00);
-    }
-    digitalWrite(SCR_CS, HIGH);
-  }
-  gb.display.command(PCD8544_SETYADDR); // no idea why this is necessary but it is to finish the last byte?
-}
 
 void loop() {
-
-  if(gb.update(flip)){
-
+  if(gb.update()){
     //gb.display.clear();
     if( mode == MODE_MENU ){
       /*mem_addr = memory_load(&CH8, mem_addr, rom+(mem_addr-0x200), sizeof(rom)-(mem_addr-0x200));
@@ -305,7 +268,7 @@ void loop() {
       //gb.display.println(CH8_memory[0x200%156]);
       //if( gb.buttons.pressed(BTN_A) ){
         //counter++;
-      for (int i=0; i<16; i++)
+        chip8_execute();
         chip8_execute();
       //}
       if( gb.buttons.pressed(BTN_C) ){

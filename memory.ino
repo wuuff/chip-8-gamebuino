@@ -78,9 +78,7 @@ extern "C" {
     memFile = SD.open(fname,FILE_READ);
     filesize = memFile.size();
     while( (addr-0x200) < filesize ){
-      /* we're using the display memory for the cache, so we can't draw the loading screen
-        if( gb.update(flip2) )*/{
-        /*
+      if( gb.update() ){
         gb.display.cursorX = 0;
         gb.display.cursorY = 0;
         gb.display.print(F("Loading "));
@@ -88,7 +86,6 @@ extern "C" {
         gb.display.print(addr-0x200);
         gb.display.print(F("/"));
         gb.display.println(filesize);
-        */
         //if( gb.buttons.pressed(BTN_A) ){
         if( !loaded(addr) ){
           memFile.close();
@@ -226,8 +223,8 @@ bool rom_menu(char* buf){
     }*/
           
     if( strlen(buf) > 3 && buf[strlen(buf)-1] == '8' ){// && buf[strlen(buf)-2] == 'H' && buf[strlen(buf)-3] == 'C' ){
-      strcpy((char*)(CH8_roms+offset),buf);//Reuse memory buffer
-      *((uint8_t**)(CH8_roms+ptroffset)) = (uint8_t*)(CH8_roms+offset);
+      strcpy((char*)(CH8_memory+offset),buf);//Reuse memory buffer
+      *((uint8_t**)(CH8_memory+ptroffset)) = (uint8_t*)(CH8_memory+offset);
       offset+=strlen(buf)+1;
       count++;
       ptroffset+=2; 
@@ -237,11 +234,11 @@ bool rom_menu(char* buf){
 
   //custommenu((char**)&(buf),1);
   //custommenu((char**)&(CH8_memory),1);
-  count = custommenu((char**)(CH8_roms+MENU_PTRS),count);
+  count = custommenu((char**)(CH8_memory+MENU_PTRS),count);
   if( count == -1 ){
     return false;
   }
-  strcpy(buf,((char**)(CH8_roms+MENU_PTRS))[count]);//Load filename into buffer
+  strcpy(buf,((char**)(CH8_memory+MENU_PTRS))[count]);//Load filename into buffer
   return true;
 }
 
